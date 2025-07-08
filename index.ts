@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes.js";
 import { setupDatabase } from "./setup.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3001", 10);
