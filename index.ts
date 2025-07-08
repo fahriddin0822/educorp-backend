@@ -3,17 +3,23 @@ import cors from "cors";
 import { registerRoutes } from "./routes.js";
 import { setupDatabase } from "./setup.js";
 import dotenv from "dotenv";
+import { log } from "console";
+
 dotenv.config();
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3001", 10);
 
+// Normalize FRONTEND_URL to remove trailing slash
+const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+
 // Enable CORS for frontend connection
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: frontendUrl,
   credentials: true
 }));
 
+// Rest of the code remains unchanged
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -36,11 +42,9 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-
       if (logLine.length > 80) {
         logLine = logLine.slice(0, 79) + "…";
       }
-
       console.log(`${new Date().toLocaleTimeString()} [backend] ${logLine}`);
     }
   });
@@ -49,15 +53,12 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Setup database with initial data
   await setupDatabase();
-  
   await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     res.status(status).json({ message });
     throw err;
   });
