@@ -10,16 +10,23 @@ dotenv.config();
 const app = express();
 const PORT = parseInt(process.env.PORT || "3001", 10);
 
-// Normalize FRONTEND_URL to remove trailing slash
-const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+// Prepare allowed frontend URLs
+const allowedOrigins = (process.env.FRONTEND_URLS || "http://localhost:5173,http://localhost:5174,https://educorp-front.vercel.app,https://educorp-front-ub5g.vercel.app")
+  .split(",")
+  .map(origin => origin.trim().replace(/\/$/, "")); // Remove trailing slashes
 
-// Enable CORS for frontend connection
+// Enable CORS for multiple allowed frontend URLs
 app.use(cors({
-  origin: frontendUrl,
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ""))) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS policy does not allow access from origin: ${origin}`));
+    }
+  },
   credentials: true
 }));
 
-// Rest of the code remains unchanged
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -56,6 +63,7 @@ app.use((req, res, next) => {
   await setupDatabase();
   await registerRoutes(app);
 
+  // Error-handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
